@@ -14,25 +14,35 @@ router.post("/",function(req,res){
     let date = req.body.date;
     let pprice = req.body.pprice;
     let mrp = req.body.mrp;
-    let data = {
-        ProductId: pid,
-        ProductName: pname,
-        Quantity: qty,
-        Supplier: supplier,
-        SupplierId: suppid,
-        PurchaseDate: date,
-        PurchasePrice: pprice,
-        MRP: mrp
-    }
-    dbconn.query('INSERT INTO productdata SET ?',data,function(err,result){
-        if(err)
-        {
+    var prodquery = "INSERT into product(productid,productname,mrp,purchaseprice) VALUES ? ON DUPLICATE KEY UPDATE productname = '"+pname+"', mrp = "+mrp+", purchaseprice = "+pprice;
+    var valuesProd = [[pid,pname,mrp,pprice]];
+    dbconn.query(prodquery,[valuesProd],function(err,result){
+        if(err){
             console.log(err);
-        } else {
-            console.log('Success');
-            res.redirect("/purchase");
+        }
+        else{
+            console.log("Success");
+            // res.redirect("purchase");
         }
     });
+    var stockQuery = "INSERT into stock(productid,quantity) VALUES ? ON DUPLICATE KEY UPDATE quantity = quantity+"+qty;
+    var stockProd = [[pid,qty]];
+    dbconn.query(stockQuery,[stockProd],function(err,result){
+        if(err)
+            console.log(err);
+        else{
+            console.log("Success");
+        }
+    });
+    var purQuery = "INSERT into purchase(productid,qty,paidamt,date,suppid,supplier) VALUES ?";
+    var purValues = [[pid,qty,pprice*qty,date,suppid,supplier]];
+    dbconn.query(purQuery,[purValues],function(err,result){
+        if(err)
+            console.log(err);
+        else
+            console.log("Success");
+    });
+    res.redirect("purchase");
 });
 
 module.exports = router;
